@@ -1,0 +1,6 @@
+The code in this repository is licensed under GPLv3.
+
+The code is based on:
+ 1. netmd.py (https://github.com/flindroth/netmd.py) under GPLv3
+ 2. libnetmd (https://github.com/linux-minidisc/linux-minidisc)runder LGPLv2.1
+
