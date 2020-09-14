@@ -19,6 +19,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=["libusb1", "pycryptodome"],
+    install_requires=["libusb1", "pycryptodome", "tinytag"],
     scripts=['md-uploader/md_upload_ctl.py']
 )
