@@ -41,13 +41,16 @@ Python 3 changes to the original library but the code here can be easily lifted.
 All NetMD-related code has been copied into the project. The software uses the
 USB bus to communicate with the device. Nothing else is needed.
 
-python-libusb1 1.8-1
-python-pycryptodome 3.9.8-2
+ - python-libusb1 1.8-1
+ - python-pycryptodome 3.9.8-2
 
 On arch linux run the following command to install the dependencies:
 ```
 $ sudo pacman -S python-cryptography python-pycryptodome
 ```
+
+Some libraries are not present in the Arch repositories, such as `translit` and
+`tinytag`. Install those separately with pip.
 
 All input tracks are converted into PCM. Hence `ffmpeg` is required to be installed.
 
