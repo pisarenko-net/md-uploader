@@ -616,8 +616,6 @@ class NetMD(object):
             raise ValueError('Supplied Session Key length wrong')
         encrypter = DES.new(sessionkey, DES.MODE_ECB)
         authentication = encrypter.encrypt(create_iv())
-        print(tracknum)
-        print(authentication)
         reply = self.__send_query('1800 080046 f0030103 48 ff 00 1001 %w %*',
                                   tracknum, bytes_to_str(authentication))
         return self.__parse_response(reply, '1800 080046 f0030103 48 00 00 1001 %?%?')

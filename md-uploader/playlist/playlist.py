@@ -1,8 +1,12 @@
+from os import listdir
 from pathlib import Path, PureWindowsPath
+import shutil
 import re
 
 from tinytag import TinyTag
 
+
+__SUPPORTED_PLAYLIST_EXTENSIONS = ['.m3u', '.m3u8']
 
 
 class Playlist(object):
@@ -33,10 +37,10 @@ class Playlist(object):
         return self.__playlist_path.stem
 
     def duration(self):
-        return sum([track.duration() for track in self.__tracks])
+        return sum([track.duration for track in self.__tracks])
 
     def is_single_artist(self):
-        return len(set([track.artist() for track in self.__tracks])) == 1
+        return len(set([track.artist for track in self.__tracks])) == 1
 
     def __iter__(self):
         for track in self.__tracks:
@@ -46,13 +50,29 @@ class Playlist(object):
 class Track(object):
     def __init__(self, path):
         self.path = path
-        self.__tag = TinyTag.get(path)
+        tag = TinyTag.get(path)
+        self.title = tag.title
+        self.artist = tag.artist
+        self.duration = tag.duration
 
-    def title(self):
-        return self.__tag.title
 
-    def artist(self):
-        return self.__tag.artist
+def find_next_playlist_path_name(playlist_directory_path_name):
+    playlist_directory_path = Path(playlist_directory_path_name)
 
-    def duration(self):
-        return self.__tag.duration
+    def is_playlist_file(playlist_path):
+        return playlist_path.is_file() and playlist_path.suffix.lower() in __SUPPORTED_PLAYLIST_EXTENSIONS
+
+    return next(
+        (str(file_path) for file_path in playlist_directory_path.iterdir() if is_playlist_file(file_path)),
+        ''
+    )
+
+
+def archive_playlist(playlist_path_name, archive_directory_path_name):
+    playlist_path = Path(playlist_path_name)
+    archive_directory_path = Path(archive_directory_path_name)
+
+    shutil.move(
+        playlist_path_name,
+        archive_directory_path.joinpath(playlist_path.name)
+    )

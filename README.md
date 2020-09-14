@@ -17,6 +17,7 @@ with the user is expected. A typical scenario would be:
 
 By default, users won't have sufficient access to the device. The solution is to
 update udev rules to grant permission. For testing purposes I'm running this under root.
+An example udev rule file is available in this repository.
 
 Sony calls the process of putting tracks onto the devices "downloading". Throughout
 the codebase I'm using the term "download". The documentation and the description
@@ -47,6 +48,8 @@ On arch linux run the following command to install the dependencies:
 ```
 $ sudo pacman -S python-cryptography python-pycryptodome
 ```
+
+All input tracks are converted into PCM. Hence `ffmpeg` is required to be installed.
 
 ## Package
 

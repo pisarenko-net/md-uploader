@@ -1,0 +1,5 @@
+# Sony MZ-N707, use lsusb to find the vendor/product ids
+ATTRS{idVendor}=="054c", ATTRS{idProduct}=="0086", MODE="0664", GROUP="sergey"
+
+# All Sony devices
+#ATTRS{idVendor}=="054c", MODE="0664", GROUP="sergey"
