@@ -1,16 +1,24 @@
 import os
 import subprocess
+import tempfile
 
 
-__DEV_NULL = open(os.devnull, 'w')
+DEV_NULL = open(os.devnull, 'w')
 
 
-def create_pcm(path):
-    filename_out = "/tmp/transcode.out"
+class Transcode(object):
+    def __init__(self, track_filename):
+        self.track_filename = track_filename
+        (_, filename_out) = tempfile.mkstemp()
+        self.transcoded_filename = filename_out
 
-    try:
-        subprocess.call(['ffmpeg', '-y', '-i', path, '-f', 's16be', filename_out], stdout=__DEV_NULL, stderr=__DEV_NULL)
-    except subprocess.CalledProcessError as e:
-        filename_out = None
+    def __enter__(self):
+        try:
+            subprocess.call(['ffmpeg', '-y', '-i', self.track_filename, '-f', 's16be', self.transcoded_filename], stdout=DEV_NULL, stderr=DEV_NULL)
+        except subprocess.CalledProcessError as e:
+            filename_out = None
 
-    return filename_out
+        return self.transcoded_filename
+
+    def __exit__(self, type, value, traceback):
+        os.remove(self.transcoded_filename)

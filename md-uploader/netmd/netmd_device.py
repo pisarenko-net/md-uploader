@@ -741,13 +741,10 @@ class NetMD(object):
                 # String ('s' is 0-terminated, 'x' is not)
                 elif char in ('s', 'x'):
                     length = len(value)
-                    if char == 's':
-                        length += 1
-                    append((length >> 8) & 0xff)
-                    append(length & 0xff)
+                    if char == 'x':
+                        append((length >> 8) & 0xff)
+                        append(length & 0xff)
                     extend(ord(x) for x in value)
-                    if char == 's':
-                        append(0)
                 elif char == '*':
                     extend(ord(x) for x in value)
                 else:

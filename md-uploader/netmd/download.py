@@ -28,15 +28,6 @@ def download_track(net_md, wav_filename, title):
         return session.download_track(track)
 
 
-def download_bulk_context_manager(net_md):
-    try:
-        net_md.disable_new_track_protection(1)
-    except NetMDNotImplemented:
-        print("Can't set device to non-protecting")
-
-    return BulkMDSession(net_md)
-
-
 class MDTrack(object):
     __PACKET_SIZE = 2048
 
@@ -101,7 +92,7 @@ class MDSession(object):
         hostnonce = bytes_to_str([random.randrange(255) for x in range(8)])
         devnonce = self.net_md.exchange_session_key(hostnonce)
         nonce = hostnonce + devnonce
-        self.sessionkey = self.__get_retail_mac(ROOT_KEY, nonce)
+        self.sessionkey = self._get_retail_mac(ROOT_KEY, nonce)
 
         return self
 
@@ -144,54 +135,3 @@ class MDSession(object):
         step2crypt = DES3.new(key, DES3.MODE_CBC, iv2)
 
         return step2crypt.encrypt(end)
-
-
-class BulkMDSession(MDSession):
-    def __init__(self, net_md):
-        super().__init__(net_md)
-
-    def __enter__(self):
-        try:
-            self.net_md.forget_session_key()
-            self.net_md.leave_secure_session()
-        except:
-            None
-
-        self.net_md.enter_secure_session()
-        self.net_md.send_key_data()
-
-        hostnonce = bytes_to_str([random.randrange(255) for x in range(8)])
-        devnonce = self.net_md.exchange_session_key(hostnonce)
-        nonce = hostnonce + devnonce
-        self.sessionkey = self._get_retail_mac(ROOT_KEY, nonce)
-
-        self.net_md.setup_download(self.sessionkey)
-
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.net_md.cache_toc()
-        self.net_md.sync_toc()
-
-        if self.sessionkey != None:
-            self.net_md.forget_session_key()
-            self.sessionkey = None
-        self.net_md.leave_secure_session()
-        
-    def download_next(self, wav_filename, title):
-        track = MDTrack(wav_filename, title, WIREFORMAT_PCM)
-        wireformat = track.wireformat
-        
-        (track_number, uuid, ccid) = self.net_md.send_track(
-            wireformat,
-            WIRE_TO_DISK_FORMAT[wireformat],
-            track.get_frame_count(),
-            track.get_packet_count(),
-            track.get_packets(),
-            self.sessionkey
-        )
-        
-        self.net_md.set_track_title(track_number, track.title)
-        self.net_md.commit_track(track_number, self.sessionkey)
-
-        return (track_number, bytes_to_str(uuid), bytes_to_str(ccid))
