@@ -54,16 +54,47 @@ Some libraries are not present in the Arch repositories, such as `translit` and
 
 All input tracks are converted into PCM. Hence `ffmpeg` is required to be installed.
 
-## Package
+## Installing
 
-To package the software run (or just run without installing but then take care
-of the dependencies manually):
+To build and install the package locally run:
 
 ```
-$ python -m pip install --user --upgrade setuptools wheel
-$ python3 setup.py sdist bdist_wheel
+$ pip install . 
 ```
 
 The package installs a script `md_uploader_ctl` into the Python $PATH. With
 the help of this script I'm testing individual NetMD API functions.
 
+Once installed, use `md_uploader` package in Python:
+
+```
+>>> import md_uploader
+>>> net_md = next(md_uploader.devices)  # gives you first available NetMD device
+```
+
+An expected interaction looks like the following:
+```
+playlist_path_name = md_uploader.find_next_playlist_path_name(PLAYLIST_QUEUE_PATH)
+
+playlist = md_uploader.Playlist(PATH_MUSIC, SUPPORTED_EXTENSIONS, playlist_path_name)
+
+net_md = next(devices)
+
+print(playlist.duration())
+
+is_va_disc = not playlist.is_single_artist()
+md_disc_title = playlist.title()
+
+net_md.erase_disc()
+net_md.set_disc_title(md_disc_title)
+
+for track in playlist:
+    md_track_title = track.title if not is_va_disc else '%s - %s' % (track.artist, track.title)
+
+    with md_uploader.TranscodeMD(track.path) as path_pcm:
+        (track_number, uuid, ccid) = md_uploader.download_track(net_md, path_pcm, md_track_title)
+
+md_uploader.archive_playlist(playlist_path_name, PLAYLIST_ARCHIVE_PATH)
+```
+
+This example is available in the `e2e_test.py` file.
