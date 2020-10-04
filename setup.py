@@ -20,5 +20,5 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     install_requires=["libusb1", "pycryptodome", "tinytag", "transliterate"],
-    scripts=['md-uploader/md_upload_ctl.py']
+    scripts=['md_uploader/md_upload_ctl.py']
 )
