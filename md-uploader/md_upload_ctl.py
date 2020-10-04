@@ -21,18 +21,25 @@ except usb1.USBErrorAccess:
 # Uncomment one or more to execute the command
 
 # net_md.erase_disc()
-#print(net_md.get_disc_title())
-#net_md.set_disc_title('Testing commands')
+# net_md.set_disc_title('Fucking fucks')
+
+# with Transcode('/home/sergey/01.wav') as path_pcm:
+# 	print("track 1 %s" % path_pcm)
+# 	download_track(net_md, path_pcm, "Leafy soil")
+
+# with Transcode('/home/sergey/02.wav') as path_pcm:
+# 	print("track 2 %s" % path_pcm)
+# 	download_track(net_md, path_pcm, "Exciting rounds")
 
 # with Transcode("/home/sergey/03.wav") as path_pcm:
-# 	print("track 1 %s" % path_pcm)
-# 	download_track(net_md, path_pcm, "Take it eeeeaaaaasyyyyy")
+# 	print("track 3 %s" % path_pcm)
+# 	download_track(net_md, path_pcm, "Fanning thins")
 
 # with Transcode("/home/sergey/untitled.wav") as path_pcm:
-# 	print("track 2 %s" % path_pcm)
-# 	download_track(net_md, path_pcm, "More than you know")
+# 	print("track 4 %s" % path_pcm)
+# 	download_track(net_md, path_pcm, "Cuckoo Cock")
 
-# with Transcode("/home/sergey/02.wav") as path_pcm:
-# 	print("track 3 %s" % path_pcm)
-# 	download_track(net_md, path_pcm, "Flying past the eye")
-
+# net_md.switch_previous_track()
+# net_md.play()
+# net_md.set_track_title(0, 'Fucker')
+# print(net_md.get_disc_capacity())

@@ -25,7 +25,9 @@ from .exception import NetMDNotImplemented
 from .exception import NetMDRejected
 from . import usb_device as devices
 from .util import bytes_to_str
+from .util import BCD2int
 from .util import create_iv
+from .util import int2BCD
 from .util import str_to_bytearray
 
 
@@ -85,7 +87,6 @@ class NetMD(object):
     __TRACK_RESTART = 0x0001
 
     __DISC_FLAG_WRITABLE = 0x10
-    __DISC_FLAG_WRITE_PROTECTED = 0x40
 
     __CONTENT_ID = b"\x01\x0F\x50\0\0\4\0\0\0" + b"\x48\xA2\x8D\x3E\x1A\x3B\x0C\x44\xAF\x2f\xa0"
     __EKBID = 0x26422642 #"\x06\xec\xfa\xb1\xc8\xa2\x1b\xfd"
@@ -200,8 +201,8 @@ class NetMD(object):
           Seek to given time of given track.
         """
         reply = self.__send_query('1850 ff000000 0000 %w %b%b%b%b', track,
-                                  int2BCD(hour), int2BCD(minute),
-                                  int2BCD(second), int2BCD(frame))
+                                  int2BCD(hour, length=2), int2BCD(minute, length=2),
+                                  int2BCD(second, length=2), int2BCD(frame, length=2))
         return self.__parse_response(reply, '1850 00000000 %?%? %w %b%b%b%b')
 
     #
@@ -271,7 +272,7 @@ class NetMD(object):
             wchar = 0
         old_len = len(self._get_disc_title())
         reply = self.__send_query('1807 02201801 00%b 3000 0a00 5000 %w 0000 ' \
-                                  '%w %s', wchar, len(title), old_len, title)
+                                  '%w %*', wchar, len(title), old_len, title)
         self.__parse_response(reply, '1807 02201801 00%? 3000 0a00 5000 %?%? 0000 ' \
                               '%?%?')
 
@@ -291,7 +292,7 @@ class NetMD(object):
         reply = self.__send_query('1806 022018%b %w 3000 0a00 ff00 00000000',
                                   wchar_value, track)
         result = self.__parse_response(reply, '1806 022018%? %?%? %?%? %?%? 1000 ' \
-                                '00%?0000 00%?000a %x')[0]
+                                '00%?0000 00%?000a %*')[0]
         #if not wchar and len(result):
         #    assert result[-1] == '\x00'
         #    result = result[:-1]
@@ -334,7 +335,7 @@ class NetMD(object):
             False: no disk
         """
         status = self.__get_status()
-        return status[4] == 0x40
+        return status[3] == 0x40
 
     def __get_status(self):
         """
@@ -343,8 +344,12 @@ class NetMD(object):
         """
         reply = self.__send_query('1809 8001 0230 8800 0030 8804 00 ff00 ' \
                                   '00000000')
-        return self.__parse_response(reply, '1809 8001 0230 8800 0030 8804 00 ' \
-                              '1000 000900000 %x')[0]
+        return str_to_bytearray(
+            self.__parse_response(
+                reply,
+                '1809 8001 0230 8800 0030 8804 00 1000 0009000000 %x'
+            )[0]
+        )
 
     def get_disc_capacity(self):
         """
@@ -371,11 +376,8 @@ class NetMD(object):
         return result
 
     def is_disk_writeable(self):
-        """
-          UNTESTED
-        """
         status = self.__get_disc_flags()
-        return status[4] == NetMD.__DISC_FLAG_WRITABLE
+        return status == NetMD.__DISC_FLAG_WRITABLE
 
     def __get_disc_flags(self):
         """
@@ -384,13 +386,6 @@ class NetMD(object):
         """
         reply = self.__send_query('1806 01101000 ff00 0001000b')
         return self.__parse_response(reply, '1806 01101000 1000 0001000b %b')[0]
-
-    def is_disk_write_protected(self):
-        """
-          UNTESTED
-        """
-        status = self.__get_disc_flags()
-        return status[4] == NetMD.__DISC_FLAG_WRITE_PROTECTED
 
     #
     # Track status
@@ -401,8 +396,7 @@ class NetMD(object):
           Get the number of disc tracks.
         """
         reply = self.__send_query('1806 02101001 3000 1000 ff00 00000000')
-        data = self.__parse_response(reply, '1806 02101001 %?%? %?%? 1000 00%?0000 ' \
-                              '%x')[0]
+        data = self.__parse_response(reply, '1806 02101001 %?%? %?%? 1000 00%?0000 %x')[0]
         assert len(data) == 6, len(data)
         assert data[:5] == '\x00\x10\x00\x02\x00', data[:5]
         return ord(data[5])
@@ -447,45 +441,6 @@ class NetMD(object):
             result[3] = BCD2int(result[3])
             result[4] = BCD2int(result[4])
         return result
-
-    def get_track_uuid(self, track):
-        """
-         Gets the DRM tracking ID for a track.
-         NetMD downloaded tracks have an 8-byte identifier (instead of their
-         content ID) stored on the MD medium. This is used to verify the
-         identity of a track when checking in.
-         track (int)
-           The track number
-         Returns
-           An 8-byte binary string containing the track UUID.
-        """
-        reply = self.__send_query('1800 080046 f0030103 23 ff 1001 %w', track)
-        return self.__parse_response(reply,'1800 080046 f0030103 23 00 1001 %?%? %*')[0]
-
-    #
-    # Track editing
-    #
-
-    def erase_track(self, track):
-        """
-          Remove a track.
-          track (int)
-            Track to remove.
-        """
-        reply = self.__send_query('1840 ff01 00 201001 %w', track)
-        self.__parse_response(reply, '1840 1001 00 201001 %?%?')
-
-    def move_track(self, source, dest):
-        """
-          Move a track.
-          source (int)
-            Track position before moving.
-          dest (int)
-            Track position after moving.
-        """
-        reply = self.__send_query('1843 ff00 00 201001 00 %w 201001 %w', source,
-                                  dest)
-        self.__parse_response(reply, '1843 0000 00 201001 00 %?%? 201001 %?%?')
 
     #
     # Sessions
@@ -738,12 +693,10 @@ class NetMD(object):
                 if char in NetMD.__FORMAT_TYPE_LEN_DICT:
                     for byte in range(NetMD.__FORMAT_TYPE_LEN_DICT[char] - 1, -1, -1):
                         append((value >> (byte * 8)) & 0xff)
-                # String ('s' is 0-terminated, 'x' is not)
-                elif char in ('s', 'x'):
+                elif char == 'x':
                     length = len(value)
-                    if char == 'x':
-                        append((length >> 8) & 0xff)
-                        append(length & 0xff)
+                    append((length >> 8) & 0xff)
+                    append(length & 0xff)
                     extend(ord(x) for x in value)
                 elif char == '*':
                     extend(ord(x) for x in value)
@@ -786,7 +739,7 @@ class NetMD(object):
                 # String ('s' is 0-terminated, 'x' is not)
                 elif char in ('s', 'x'):
                     length = pop() << 8 | pop()
-                    value = ''.join(input_stack[:length])
+                    value = ''.join(bytes_to_str(input_stack)[:length])
                     input_stack = input_stack[length:]
                     if char == 's':
                         append(value[:-1])
